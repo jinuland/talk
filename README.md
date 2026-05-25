@@ -62,13 +62,14 @@ npm run dev
 
 Stripe 실제 사용 시 webhook URL: `https://your-domain/api/stripe/webhook`
 
-## 🏗 프로덕션 배포 메모 (AWS 친화)
+## 🚀 프로덕션 배포
 
-- **DB**: `DATABASE_URL` 을 RDS PostgreSQL 또는 Supabase 로 교체.
-  - `prisma/schema.prisma` 의 `provider = "sqlite"` → `"postgresql"` 변경 후 `npx prisma migrate dev`
-- **Hosting**: Vercel / AWS Amplify / ECS Fargate / EKS / Lambda(Next-on-Lambda) 모두 가능.
-- **Storage**: 아바타 업로드를 직접 호스팅하려면 S3 + CloudFront. 현재는 외부 URL 만 받는다.
-- **Secrets**: AWS Secrets Manager → 환경변수로 주입.
+**AWS Amplify Hosting** 단계별 가이드는 [`DEPLOY_AMPLIFY.md`](./DEPLOY_AMPLIFY.md) 참고.
+요약: RDS Postgres 만들기 → Amplify Console 에서 GitHub 연결 + env vars 입력 → 첫 배포 (~30분).
+
+- `amplify.yml` 이 preBuild 에서 SQLite → PostgreSQL provider 를 자동 패치
+- 외부 키 (Stripe / Zoom / Anthropic) 없어도 mock fallback 으로 동작
+- 첫 배포 시 `RUN_SEED=true` 한 번만 켜면 데모 데이터 시드
 
 ## 📁 구조
 

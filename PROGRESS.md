@@ -6,8 +6,9 @@
 ## 📌 Status (2026-05-25)
 
 - **Branch**: `claude/language-exchange-marketplace-TZwdw`
-- **Stage**: MVP v0.1 — 로컬 SQLite + mock 외부 서비스로 end-to-end 검증 완료
+- **Stage**: MVP v0.1 — 로컬 SQLite + mock 외부 서비스 / Amplify 배포 준비 완료
 - **Build**: ✅ `next build` 통과 (19 라우트)
+- **Deploy**: AWS Amplify 옵션 선택. `amplify.yml` + `DEPLOY_AMPLIFY.md` 작성됨. RDS + Amplify Console 작업은 사용자가 수행.
 - **데모 계정** (password: `password123`):
   - 외국인: `emma@talk.dev`, `kenji@talk.dev`
   - 한국인: `minji@talk.dev`, `junho@talk.dev`, `sora@talk.dev`, `hyuk@talk.dev`
@@ -53,6 +54,12 @@
 - [x] Tailwind + 커스텀 brand 컬러
 - [x] 시드 스크립트 (`npm run db:seed`)
 
+### 배포 (AWS Amplify Hosting 옵션)
+- [x] `amplify.yml` — preBuild 에서 `sqlite → postgresql` 자동 패치 + `prisma generate` + `db push`
+- [x] `RUN_SEED=true` 환경변수 한 번 켜면 첫 배포에서 데모 데이터 시드
+- [x] `DEPLOY_AMPLIFY.md` — RDS / Amplify Console / Stripe Webhook / Zoom OAuth / 도메인 / 트러블슈팅 단계별 가이드
+- [x] `package.json` 빌드 스크립트 단순화 (`prisma migrate deploy` 제거, migrations 없으니 amplify 가 db push 로 해결)
+
 ---
 
 ## 🚧 In progress
@@ -64,11 +71,11 @@
 ## 🔜 Next / TODO
 
 ### 우선순위 높음
-- [ ] **AWS 배포 파이프라인** — 사용자가 결정 필요 (아래 "AWS 배포 옵션" 참고)
-  - [ ] Postgres 마이그레이션 (`schema.prisma` provider 교체 + 최초 `migrate dev`)
-  - [ ] Dockerfile + ECR
-  - [ ] IaC 선택 (CDK / Terraform / SST / Amplify)
-  - [ ] Secrets Manager 연동
+- [ ] **첫 Amplify 배포 실행** — 사용자 작업 (DEPLOY_AMPLIFY.md 절차)
+  - [ ] RDS Postgres 생성 (5분)
+  - [ ] Amplify Console 에서 GitHub repo 연결 + env vars 입력
+  - [ ] 첫 배포 후 `NEXTAUTH_URL` 보정 + `RUN_SEED` 제거
+- [ ] **Prisma migrations 도입** — 운영에서 `db push` 대신 `migrate deploy`. 첫 migration 만 만들면 됨
 - [ ] **Timezone-aware 캘린더** — 현재 서버 로컬 시간 기준. 호스트/게스트 각자 IANA TZ 저장
 - [ ] **이메일 알림** — 예약 확정 / 24h 전 리마인더 (SES)
 
@@ -91,41 +98,29 @@
 
 ---
 
-## 🧭 AWS 배포 옵션 (결정 필요)
+## 🧭 AWS 배포 — Amplify 선택 (2026-05-25)
 
-사용자 본인이 AWS SA 계정 보유. 추천 순:
+옵션 1 (Amplify Hosting) 채택. **`DEPLOY_AMPLIFY.md`** 에 단계별 가이드.
 
-### A. **GitHub Actions + OIDC + CDK** (강력 추천)
-- AWS IAM Role with OIDC trust to GitHub Actions — **장기 키 불필요**
-- `cdk deploy` 가 ECR push + ECS Fargate 업데이트 + RDS 마이그레이션
-- 장점: 비밀 키가 어디에도 저장되지 않음, PR 머지 즉시 배포
-- 작업량: 0.5~1일
+### 왜 Amplify
+- IaC / Dockerfile 없이 콘솔에서 GitHub 연결만으로 배포
+- Next.js 14 SSR + API Routes 자동 인식
+- 환경변수 콘솔에서 관리 (Secrets Manager 연동은 v0.2)
+- 첫 배포까지 ~30분, 비용 ~$0 (RDS Free Tier + Amplify 무료 한도)
 
-### B. **AWS Amplify Hosting** (가장 빠름)
-- GitHub 연동 한 번이면 Next.js 자동 빌드/배포
-- 환경변수 콘솔에서 설정
-- DB는 별도 RDS 또는 Supabase
-- 장점: 인프라 코드 거의 없음
-- 단점: 커스터마이즈 한계 (예: VPC 내부 통신 제한적)
+### 자동화된 부분 (`amplify.yml`)
+- 매 빌드마다 `sqlite → postgresql` 자동 패치
+- `prisma generate` + `prisma db push` (스키마 동기화)
+- `RUN_SEED=true` env 가 설정되어 있으면 시드 실행 (첫 배포만 켰다 끄기)
 
-### C. **ECS Fargate + ALB + RDS** (full-control)
-- Dockerfile + Terraform/CDK
-- VPC, RDS Postgres, Secrets Manager, CloudWatch
-- 장점: 완전한 컨트롤
-- 단점: 초기 설정 1~2일
+### 사용자가 해야 할 작업
+1. RDS Postgres 생성 (콘솔)
+2. Amplify Console 에서 GitHub 연결 + env vars 입력
+3. 도메인 (선택)
+4. Stripe webhook URL 등록 (실제 결제 사용 시)
 
-### 🔑 AWS 키를 주면 제가 배포 가능한가?
-**기술적으로는 가능, 그러나 권장하지 않습니다.** 이유:
-1. 저는 격리된 임시 컨테이너에서 동작 — 세션 종료 시 소멸하지만 그동안 키는 환경에 노출됨
-2. 채팅을 통한 장기 키 전달은 감사·회수 어려움
-3. 안전한 패턴은: 제가 **IaC 코드 + GitHub Actions workflow 를 작성**하고, 본인이 AWS 콘솔에서 OIDC IAM Role 한 번만 만든 뒤 GitHub repo secret 으로 Role ARN 만 등록 → GitHub Actions 가 short-lived STS 토큰으로 배포
-
-**권장 흐름**:
-1. 제가 옵션 A 또는 B 의 코드 + 단계별 가이드를 PR 로 작성
-2. 본인이 콘솔에서 OIDC Provider + IAM Role 생성 (안내문 따라 5분)
-3. GitHub Actions 가 자동 배포
-
-옵션 B(Amplify) 로 가면 IAM 작업도 거의 없이 첫 배포 가능합니다. 어떤 옵션으로 진행할지 알려주세요.
+### 🔑 AWS 키 / 채팅 전달 보안 메모
+긴 수명의 IAM Access Key 를 채팅으로 받지 않는 게 베스트 프랙티스 (격리 컨테이너라도 키가 환경/로그에 남음). Amplify Console 작업은 본인이 직접 수행하는 게 안전. 추후 IaC 자동화가 필요해지면 GitHub Actions + OIDC 패턴(옵션 A) 으로 무키 배포 추가 가능.
 
 ---
 
@@ -138,6 +133,10 @@
 | 2026-05-25 | 모든 외부 서비스 mock fallback | 키 없는 리뷰어/개발자도 전체 흐름 체험 가능 |
 | 2026-05-25 | Tailwind + 커스텀 brand 컬러 | 컴포넌트 라이브러리 도입 전까지 빠른 일관성 |
 | 2026-05-25 | NextAuth Credentials 만 (OAuth 없음) | MVP 범위 축소, OAuth 는 v0.2 |
+| 2026-05-25 | 배포 옵션 = **Amplify Hosting** | 가장 빠르고 IaC 부담 없음. 운영 강화 필요해지면 ECS+CDK 로 갈아탈 수 있음 |
+| 2026-05-25 | 운영 DB = **RDS Postgres** (사용자 콘솔에서 생성) | Amplify Hosting + RDS 가 가장 표준 조합. SQLite 는 로컬만. |
+| 2026-05-25 | 스키마 provider 단일 파일 + amplify.yml `sed` 패치 | 별도 prod 스키마 파일을 유지하지 않아 drift 방지 |
+| 2026-05-25 | `db push --accept-data-loss` 로 시작, `migrate deploy` 는 v0.2 | MVP 빠른 배포 우선. 첫 migration 만 만들면 곧 전환 가능 |
 
 ---
 
