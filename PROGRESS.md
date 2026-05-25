@@ -64,7 +64,22 @@
 
 ## 🚧 In progress
 
-- (없음 — 다음 마일스톤 결정 대기)
+### Amplify 첫 배포 세션 (2026-05-25 ~ )
+사용자와 함께 진행 중. 각 단계 끝낼 때마다 체크.
+
+- [ ] **0)** 로컬에서 `openssl rand -base64 32` 로 `NEXTAUTH_SECRET` 생성
+- [ ] **1)** RDS Postgres `talk-prod` 생성 (Free Tier, Public access, initial DB name = `talk`)
+- [ ] **2)** Security Group `talk-db-sg` 인바운드 5432 / 0.0.0.0/0 추가
+- [ ] **3)** (선택) 로컬 psql 로 연결 확인
+- [ ] **4)** Amplify Console → GitHub repo 연결 → branch `claude/language-exchange-marketplace-TZwdw`
+- [ ] **5)** Env vars 입력: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL=placeholder`, `NEXT_PUBLIC_APP_URL=placeholder`, `RUN_SEED=true`
+- [ ] **6)** 첫 배포 → 빌드 로그 확인 (`✓ Done.` + `Compiled successfully`)
+- [ ] **7)** 발급된 Amplify URL 로 `NEXTAUTH_URL` / `NEXT_PUBLIC_APP_URL` 교체 + `RUN_SEED` 삭제 → 재배포
+- [ ] **8)** 동작 확인: 로그인 → 예약 → 결제(mock) → Zoom + 아젠다 표시
+- [ ] **9)** (선택) Anthropic / Stripe / Zoom 실제 키 추가
+- [ ] **10)** (선택) 커스텀 도메인 + ACM 인증
+
+상세 가이드: [`DEPLOY_AMPLIFY.md`](./DEPLOY_AMPLIFY.md)
 
 ---
 
