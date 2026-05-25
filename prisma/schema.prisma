@@ -1,0 +1,120 @@
+// Talk - Korean language exchange marketplace
+// Run: npx prisma db push && npx prisma db seed
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role: "KOREAN" | "FOREIGNER"  (stored as text — sqlite has no enums)
+// BookingStatus: "PENDING_PAYMENT" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          String   // "KOREAN" | "FOREIGNER" (sqlite has no enums)
+  bio           String?
+  avatar        String?
+  country       String?
+  nativeLanguage String?
+  // Korean tutor-only fields
+  hourlyRate    Int?     // KRW per hour
+  timezone      String?  @default("Asia/Seoul")
+  specialties   String?  // comma-separated tag list
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  availabilities    Availability[]
+  bookingsAsHost    Booking[] @relation("HostBookings")
+  bookingsAsGuest   Booking[] @relation("GuestBookings")
+  reviewsWritten    Review[]  @relation("Reviewer")
+  reviewsReceived   Review[]  @relation("Reviewee")
+  followers         Follow[]  @relation("Following")
+  following         Follow[]  @relation("Follower")
+}
+
+// Recurring weekly availability slots set by Korean hosts.
+model Availability {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int    // 0 = Sun .. 6 = Sat
+  startHour Int    // 0..23 in user's timezone
+  endHour   Int    // 1..24
+
+  @@index([userId])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  hostId          String
+  guestId         String
+  host            User     @relation("HostBookings", fields: [hostId], references: [id])
+  guest           User     @relation("GuestBookings", fields: [guestId], references: [id])
+  startTime       DateTime
+  endTime         DateTime
+  status          String   @default("PENDING_PAYMENT")
+  themeId         String?
+  theme           Theme?   @relation(fields: [themeId], references: [id])
+  customTopic     String?
+  agendaMarkdown  String?
+  zoomJoinUrl     String?
+  zoomStartUrl    String?
+  amount          Int      // KRW
+  stripeSessionId String?
+  stripePaymentIntentId String?
+
+  review          Review?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([hostId, startTime])
+  @@index([guestId, startTime])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  bookingId  String   @unique
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  reviewerId String
+  revieweeId String
+  reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  rating     Int      // 1..5
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  @@index([revieweeId])
+}
+
+model Follow {
+  id          String @id @default(cuid())
+  followerId  String
+  followingId String
+  follower    User   @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User   @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// Pre-made curriculum themes for conversation practice.
+model Theme {
+  id          String @id @default(cuid())
+  slug        String @unique
+  title       String
+  description String
+  level       String // BEGINNER | INTERMEDIATE | ADVANCED
+  emoji       String?
+  bullets     String // newline-separated suggested talking points
+  bookings    Booking[]
+}

@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: #fbfaf8;
+  color: #0e0f12;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600;
+  }
+  .btn-ghost {
+    @apply btn bg-ink-100 text-ink-900 hover:bg-ink-300/60;
+  }
+  .btn-outline {
+    @apply btn border border-ink-300 hover:bg-ink-100;
+  }
+  .input {
+    @apply w-full px-3 py-2 rounded-xl border border-ink-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-ink-100;
+  }
+  .label {
+    @apply block text-sm font-medium text-ink-700 mb-1;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
+/* simple markdown prose for agenda viewer */
+.prose-talk h1 { @apply text-2xl font-bold mt-4 mb-3; }
+.prose-talk h2 { @apply text-xl font-semibold mt-5 mb-2; }
+.prose-talk h3 { @apply text-lg font-semibold mt-4 mb-2; }
+.prose-talk p  { @apply my-2 leading-7; }
+.prose-talk ul { @apply list-disc pl-6 my-2 space-y-1; }
+.prose-talk ol { @apply list-decimal pl-6 my-2 space-y-1; }
+.prose-talk blockquote { @apply border-l-4 border-brand-300 bg-brand-50 px-4 py-2 my-3 text-ink-700 italic rounded-r; }
+.prose-talk code { @apply bg-ink-100 px-1 py-0.5 rounded text-sm; }
+.prose-talk strong { @apply font-semibold; }
