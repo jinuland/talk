@@ -1,0 +1,42 @@
+# AWS Amplify build spec for Talk (Next.js 14 + Prisma + Postgres)
+#
+# How the SQLite → Postgres switch works:
+# - Local dev keeps `provider = "sqlite"` in prisma/schema.prisma (zero setup).
+# - Amplify's preBuild patches that single line to "postgresql" before
+#   `prisma generate`, so the deployed Prisma Client is built against
+#   the RDS Postgres that DATABASE_URL points to.
+# - No duplicate schema files to keep in sync.
+#
+# Required Amplify console env vars (App settings → Environment variables):
+#   DATABASE_URL                       — postgresql://user:pass@host:5432/db?sslmode=require
+#   NEXTAUTH_URL                       — https://<your-domain>  (no trailing slash)
+#   NEXTAUTH_SECRET                    — `openssl rand -base64 32`
+#   NEXT_PUBLIC_APP_URL                — same as NEXTAUTH_URL
+# Optional (mock fallbacks kick in if absent):
+#   ANTHROPIC_API_KEY, ANTHROPIC_MODEL
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+#   ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET
+# One-shot bootstrap (set on first deploy, then remove):
+#   RUN_SEED=true                      — runs `npm run db:seed` after schema push
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci --cache .npm --prefer-offline
+        - sed -i 's|provider = "sqlite"|provider = "postgresql"|' prisma/schema.prisma
+        - npx prisma generate
+        - npx prisma db push --accept-data-loss
+        - if [ "$RUN_SEED" = "true" ]; then echo "→ Seeding demo data"; npm run db:seed; else echo "→ Skipping seed (set RUN_SEED=true to enable on first deploy)"; fi
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - .next/cache/**/*
+      - .npm/**/*
+      - node_modules/**/*
