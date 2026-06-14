@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --accept-data-loss --skip-generate && next build",
+    "build": "prisma generate && prisma db push --accept-data-loss --skip-generate && npm run db:seed-if-flagged && next build",
+    "db:seed-if-flagged": "if [ \"$RUN_SEED\" = \"true\" ]; then echo '→ RUN_SEED=true → seeding'; tsx prisma/seed.ts; else echo '→ Skipping seed (set RUN_SEED=true to enable)'; fi",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
