@@ -1,0 +1,26 @@
+# Local Postgres for development.
+# Usage:
+#   docker compose up -d        # start
+#   docker compose down         # stop (keep data)
+#   docker compose down -v      # stop + wipe volume
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: talk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: talk
+      POSTGRES_USER: talk
+      POSTGRES_PASSWORD: talk
+    ports:
+      - "5432:5432"
+    volumes:
+      - talk_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talk -d talk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  talk_postgres_data:

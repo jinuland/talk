@@ -6,11 +6,11 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Role: "KOREAN" | "FOREIGNER"  (stored as text — sqlite has no enums)
+// Role: "KOREAN" | "FOREIGNER"  (stored as text — single-source schema, no enums for portability)
 // BookingStatus: "PENDING_PAYMENT" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
 
 model User {
