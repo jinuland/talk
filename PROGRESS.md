@@ -64,20 +64,26 @@
 
 ## 🚧 In progress
 
-### Amplify 첫 배포 세션 (2026-05-25 ~ )
-사용자와 함께 진행 중. 각 단계 끝낼 때마다 체크.
+### Amplify 첫 배포 세션 (2026-05-25 ~ 2026-06-14)
+사용자가 임시 STS 자격 + GitHub PAT 제공 → 거의 모든 단계 자동화로 진행.
 
-- [ ] **0)** 로컬에서 `openssl rand -base64 32` 로 `NEXTAUTH_SECRET` 생성
-- [ ] **1)** RDS Postgres `talk-prod` 생성 (Free Tier, Public access, initial DB name = `talk`)
-- [ ] **2)** Security Group `talk-db-sg` 인바운드 5432 / 0.0.0.0/0 추가
-- [ ] **3)** (선택) 로컬 psql 로 연결 확인
-- [ ] **4)** Amplify Console → GitHub repo 연결 → branch `claude/language-exchange-marketplace-TZwdw`
-- [ ] **5)** Env vars 입력: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL=placeholder`, `NEXT_PUBLIC_APP_URL=placeholder`, `RUN_SEED=true`
-- [ ] **6)** 첫 배포 → 빌드 로그 확인 (`✓ Done.` + `Compiled successfully`)
-- [ ] **7)** 발급된 Amplify URL 로 `NEXTAUTH_URL` / `NEXT_PUBLIC_APP_URL` 교체 + `RUN_SEED` 삭제 → 재배포
-- [ ] **8)** 동작 확인: 로그인 → 예약 → 결제(mock) → Zoom + 아젠다 표시
-- [ ] **9)** (선택) Anthropic / Stripe / Zoom 실제 키 추가
-- [ ] **10)** (선택) 커스텀 도메인 + ACM 인증
+- [x] **0)** `NEXTAUTH_SECRET` 생성 (자동, /tmp 저장)
+- [x] **1)** RDS Postgres `talk-prod` 생성 (CLI, `db.t4g.micro`, PG 16.6, Public, initial DB = `talk`, 자동 backup 7일)
+- [x] **2)** Security Group `talk-db-sg` (`sg-06c8faf91beeb6540`) 5432/tcp 0.0.0.0/0 인바운드 추가
+- [x] **3)** RDS 가용성 확인 (`available`), endpoint = `talk-prod.ckm1qwbku9nl.ap-northeast-2.rds.amazonaws.com`
+- [x] **4)** Amplify 앱 `talk` 생성 (App ID `d10sxkabmueicu`, `WEB_COMPUTE`)
+- [x] **5)** Env vars 6개 CLI 로 set (DATABASE_URL, NEXTAUTH_URL, NEXT_PUBLIC_APP_URL, NEXTAUTH_SECRET, RUN_SEED=true, ANTHROPIC_MODEL=claude-sonnet-4-6)
+- [x] **6)** GitHub `main` 머지 (PR #2 squash, sha 518f112)
+- [x] **7)** Amplify 앱 ↔ GitHub `jinuland/talk` 연결 (PAT 사용)
+- [x] **8)** `main` 브랜치 생성 (Next.js SSR / PRODUCTION / auto-build)
+- [x] **9)** 빌드 job 1 시작 (RUNNING)
+- [ ] **10)** 빌드 SUCCEED 대기 (현재 진행 중)
+- [ ] **11)** 동작 확인: 로그인 → 예약 → 결제(mock) → Zoom + 아젠다
+- [ ] **12)** `RUN_SEED` 삭제 → 재배포 (sample reviews 중복 누적 방지)
+- [ ] **13)** (선택) Anthropic / Stripe / Zoom 실제 키 추가
+- [ ] **14)** (선택) 커스텀 도메인 + ACM 인증
+
+배포 URL (활성 대기): https://main.d10sxkabmueicu.amplifyapp.com
 
 상세 가이드: [`DEPLOY_AMPLIFY.md`](./DEPLOY_AMPLIFY.md)
 
