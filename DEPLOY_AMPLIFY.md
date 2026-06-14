@@ -84,25 +84,40 @@ postgresql://talkadmin:<RDS_PASSWORD>@<RDS_ENDPOINT>:5432/talk?sslmode=require
 
 ---
 
-## 2) Security Group 인바운드 열기 (2분) ⚠️ 자주 놓치는 부분
+## 2) Security Group 인바운드 — Amplify CodeBuild + SSR runtime 만 허용 (3분) ⚠️
 
 이거 안 하면 Amplify 빌드의 `prisma db push` 가 **timeout** 으로 hang 합니다.
 
+> ❌ **0.0.0.0/0 절대 금지** — 조직의 보안 모니터링이 즉시 알람을 띄웁니다 (실제로 한 번 당함, 본 가이드의 v1 실수).
+
+### 빌드 환경 IP (CodeBuild)
+Amplify Hosting 빌드는 CodeBuild 위에서 돕니다. 서비스 IP 범위는 AWS 가 공개:
+
+```bash
+curl -sS https://ip-ranges.amazonaws.com/ip-ranges.json \
+  | jq -r '.prefixes[] | select(.service=="CODEBUILD" and .region=="ap-northeast-2") | .ip_prefix'
+# 예: 13.124.145.16/29 , 3.38.90.8/29  (서울, 2026-06 기준)
+```
+
+이 CIDR 들만 5432/tcp 인바운드로 추가하세요.
+
 1. RDS 인스턴스 → Connectivity & security → **VPC security groups** 의 `talk-db-sg` 클릭
 2. **Inbound rules** 탭 → **Edit inbound rules**
-3. **Add rule**
-   - Type: **PostgreSQL** (port 5432 자동)
-   - Source: **Anywhere-IPv4 (0.0.0.0/0)** ← 임시. 운영 시 Amplify 빌드 환경 IP 또는 VPC 내부로 좁힘
+3. 각 CodeBuild CIDR 마다 rule 추가
+   - Type: **PostgreSQL** (port 5432)
+   - Source: **Custom → 위에서 받은 CIDR**
 4. **Save rules**
 
-### (선택) 로컬에서 연결 확인
-본인 머신에 `psql` 있으면:
-```bash
-psql "postgresql://talkadmin:<password>@<endpoint>:5432/talk?sslmode=require" -c "select 1;"
-```
-`1` 이 출력되면 OK. 안 되면:
-- Security Group 5432 가 0.0.0.0/0 로 열려있는지
-- Password 에 URL 인코딩 필요한 문자가 있는지
+### SSR runtime → RDS 는?
+Amplify Hosting Gen 1 의 SSR 런타임 Lambda 는 **고정 IP가 공개되지 않습니다**. 두 가지 옵션 중 선택:
+
+| 옵션 | 작업량 | 비고 |
+|---|---|---|
+| **A. VPC Connector + RDS Private (권장)** | 1~2시간 | RDS Public access 끄고, Amplify 빌드/런타임을 같은 VPC 에 attach. 공인 IP 노출 0. 단, Gen 1 Amplify Hosting 은 SSR VPC 가 제한적이라 Gen 2 또는 Lambda 직접 배포 검토 필요. |
+| **B. 외부 managed Postgres (Neon / Supabase / Aurora Serverless v2 Public)** | 30분 | DB 가 IAM/TLS 인증 기반 공개. SG 룰 자체가 없음. MVP/데모에 빠름. |
+| **C. ECS Fargate 같은 VPC 배포** | 반나절 | 본격 운영 패턴. Amplify Hosting 대체. |
+
+데모/MVP 단계는 **B**, 운영은 **A 또는 C** 로 전환.
 
 ---
 

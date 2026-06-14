@@ -69,7 +69,7 @@
 
 - [x] **0)** `NEXTAUTH_SECRET` 생성 (자동, /tmp 저장)
 - [x] **1)** RDS Postgres `talk-prod` 생성 (CLI, `db.t4g.micro`, PG 16.6, Public, initial DB = `talk`, 자동 backup 7일)
-- [x] **2)** Security Group `talk-db-sg` (`sg-06c8faf91beeb6540`) 5432/tcp 0.0.0.0/0 인바운드 추가
+- [x] **2)** Security Group `talk-db-sg` (`sg-06c8faf91beeb6540`) 5432/tcp 인바운드 — ⚠️ v1 에서 0.0.0.0/0 로 열었다가 보안 티켓 발생, 2026-06-14 21:39 UTC 즉시 revoke 하고 CodeBuild CIDR (`13.124.145.16/29`, `3.38.90.8/29`) 만 화이트리스트로 교체
 - [x] **3)** RDS 가용성 확인 (`available`), endpoint = `talk-prod.ckm1qwbku9nl.ap-northeast-2.rds.amazonaws.com`
 - [x] **4)** Amplify 앱 `talk` 생성 (App ID `d10sxkabmueicu`, `WEB_COMPUTE`)
 - [x] **5)** Env vars 6개 CLI 로 set (DATABASE_URL, NEXTAUTH_URL, NEXT_PUBLIC_APP_URL, NEXTAUTH_SECRET, RUN_SEED=true, ANTHROPIC_MODEL=claude-sonnet-4-6)
@@ -89,13 +89,23 @@
 
 ---
 
+## 🚨 Open incidents
+
+### 1. RDS SG 0.0.0.0/0 (2026-06-14 21:38 UTC 보안 티켓)
+- **상태**: 즉시 revoke 완료, CodeBuild CIDR 만 화이트리스트로 교체
+- **현재 노출**: 빌드 (`prisma db push`) 만 가능. SSR 런타임 (페이지 요청) → RDS 연결은 **막힘 가능성 높음** (Amplify SSR Lambda 의 공인 IP 가 화이트리스트에 없음)
+- **결정 필요**: 영구 fix 옵션 A/B/C 중 선택 (DEPLOY_AMPLIFY.md §2 표 참고)
+  - **A. VPC Connector + RDS Private** — 진짜 운영 패턴
+  - **B. Neon/Supabase 같은 public-by-design DB 로 마이그레이션** — 데모/MVP 빠름
+  - **C. ECS Fargate 같은 VPC 배포** — Amplify Hosting 대체
+
+---
+
 ## 🔜 Next / TODO
 
 ### 우선순위 높음
-- [ ] **첫 Amplify 배포 실행** — 사용자 작업 (DEPLOY_AMPLIFY.md 절차)
-  - [ ] RDS Postgres 생성 (5분)
-  - [ ] Amplify Console 에서 GitHub repo 연결 + env vars 입력
-  - [ ] 첫 배포 후 `NEXTAUTH_URL` 보정 + `RUN_SEED` 제거
+- [x] **첫 Amplify 배포 실행** — 완료 (job 2 SUCCEED, 2026-06-14 10:20 UTC)
+- [ ] **SSR runtime → RDS 연결 영구 fix** (위 incident 1 결정 후 진행)
 - [ ] **Prisma migrations 도입** — 운영에서 `db push` 대신 `migrate deploy`. 첫 migration 만 만들면 됨
 - [ ] **Timezone-aware 캘린더** — 현재 서버 로컬 시간 기준. 호스트/게스트 각자 IANA TZ 저장
 - [ ] **이메일 알림** — 예약 확정 / 24h 전 리마인더 (SES)
