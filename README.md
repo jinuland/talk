@@ -19,9 +19,10 @@
 ## 🛠 Stack
 
 - Next.js 14 (App Router) + TypeScript + Tailwind
-- Prisma (default: SQLite, prod: PostgreSQL/RDS/Supabase 어디든)
-- NextAuth.js (Credentials)
+- Prisma + PostgreSQL (로컬: docker-compose, 프로덕션: Supabase)
+- NextAuth.js (Credentials) — Phase 2 에서 Supabase Auth 추가 예정
 - Stripe / Zoom Server-to-Server OAuth / Anthropic SDK
+- 호스팅: Vercel (Next.js SSR)
 - Lucide React 아이콘
 
 ## 🚀 Quick start
@@ -30,14 +31,17 @@
 # 1. 의존성 설치
 npm install
 
-# 2. 환경변수 (모든 외부 API 키는 선택 — 비워두면 mock 사용)
+# 2. 환경변수
 cp .env.example .env
 
-# 3. DB 초기화 + 시드 (SQLite, 파일 하나로 끝)
+# 3. 로컬 Postgres (Docker)
+docker compose up -d
+
+# 4. DB 스키마 + 시드
 npx prisma db push
 npm run db:seed
 
-# 4. 개발 서버
+# 5. 개발 서버
 npm run dev
 # → http://localhost:3000
 ```
@@ -64,12 +68,12 @@ Stripe 실제 사용 시 webhook URL: `https://your-domain/api/stripe/webhook`
 
 ## 🚀 프로덕션 배포
 
-**AWS Amplify Hosting** 단계별 가이드는 [`DEPLOY_AMPLIFY.md`](./DEPLOY_AMPLIFY.md) 참고.
-요약: RDS Postgres 만들기 → Amplify Console 에서 GitHub 연결 + env vars 입력 → 첫 배포 (~30분).
+**Vercel + Supabase** 단계별 가이드는 [`DEPLOY_VERCEL.md`](./DEPLOY_VERCEL.md) 참고.
+요약: Supabase 프로젝트 만들기 → Vercel import → env vars 입력 → 첫 배포 (~15분).
 
-- `amplify.yml` 이 preBuild 에서 SQLite → PostgreSQL provider 를 자동 패치
 - 외부 키 (Stripe / Zoom / Anthropic) 없어도 mock fallback 으로 동작
 - 첫 배포 시 `RUN_SEED=true` 한 번만 켜면 데모 데이터 시드
+- 데모는 무료, 출시 후 ~$45/월 (Supabase Pro $25 + Vercel Pro $20/seat)
 
 ## 📁 구조
 

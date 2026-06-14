@@ -4,7 +4,7 @@ import { TutorCard, TutorCardData } from "@/components/TutorCard";
 import { average } from "@/lib/utils";
 import { ArrowRight, Sparkles, ShieldCheck, Video, CalendarCheck2 } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 async function getFeaturedTutors(): Promise<TutorCardData[]> {
   const tutors = await prisma.user.findMany({
